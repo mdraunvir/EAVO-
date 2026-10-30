@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EAVO Quiz Arena</title>
+<style>
+:root{--cyan:#00e5ff;--purple:#8b5cff;--bg:#070b18;--panel:#111b34;--muted:#afbdd8}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Noto Sans Bengali",sans-serif;background:radial-gradient(circle at top,#1b2855,#070b18 60%);color:#f2f6ff}.wrap{max-width:900px;margin:auto;padding:18px}.card{background:#111b34ee;border:1px solid #30436e;border-radius:20px;padding:20px;margin:16px 0;box-shadow:0 10px 30px #0005}.logo{text-align:center;font-size:clamp(45px,10vw,76px);font-weight:900;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 20px #00e5ff66}.sub{text-align:center;color:var(--muted)}h2{text-align:center}label{display:block;color:var(--muted);margin:12px 0 5px}input{width:100%;padding:13px;border-radius:12px;background:#080f22;border:1px solid #40537b;color:white;font-size:16px}button{padding:12px 14px;border:0;border-radius:12px;background:linear-gradient(100deg,var(--cyan),#8b75ff);color:#06101d;font-weight:800;font-size:15px;cursor:pointer;margin:4px}button:disabled{opacity:.7;cursor:default}.secondary{background:#202d4b;color:white;border:1px solid #40537b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}.number{min-height:60px;font-size:22px;background:#14213f;color:var(--cyan);border:1px solid #40537b}.hidden{display:none!important}.status{text-align:center;min-height:25px;color:#b9f7ff}.question{text-align:center;font-size:20px;margin:22px 0}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.answers button{background:#202e50;color:white;border:1px solid #40537b}.answers button.correct{background:#176247}.answers button.wrong{background:#852a3b}.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.pill{border:1px solid #40537b;border-radius:30px;padding:7px 11px;color:var(--muted)}.small{font-size:13px;line-height:1.6;color:var(--muted)}
+</style>
+</head>
+<body><div class="wrap">
+<section id="login" class="card">
+<div class="logo">EAVO</div><p class="sub">QUIZ ARENA • NUMBER CHALLENGE</p><h2>লগ ইন করো</h2>
+<p class="small">এটি একটি অফলাইন ডেমো। আসল Gmail পাসওয়ার্ড দেবে না। নিজের নাম ও একটি ডেমো PIN ব্যবহার করো।</p>
+<label for="playerName">তোমার নাম</label><input id="playerName" maxlength="24" placeholder="যেমন: EAVO Player">
+<label for="pin">৪–৬ সংখ্যার ডেমো PIN</label><input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="ডেমো PIN">
+<p id="loginMsg" class="status"></p><button style="width:100%" onclick="login()">ENTER EAVO</button>
+</section>
+<main id="app" class="hidden">
+<section class="card"><div class="bar"><span id="welcome" class="pill">স্বাগতম!</span><button class="secondary" onclick="logout()">লগ আউট</button></div><div class="logo">EAVO</div><p class="sub">জ্ঞান পরীক্ষা করো, পয়েন্ট জেতো!</p></section>
+<section class="card"><h2>একটি কুইজ বেছে নাও</h2><div class="grid">
+<button onclick="selectCategory('general')">🌟 সাধারণ জ্ঞান</button><button onclick="selectCategory('gaming')">🎮 গেমিং কুইজ</button><button onclick="selectCategory('technology')">📱 অ্যাপ ও প্রযুক্তি</button><button onclick="selectCategory('science')">🔬 বিজ্ঞান কুইজ</button><button onclick="selectCategory('math')">➗ গণিত কুইজ</button><button onclick="showNumbers()">🔢 নম্বর চ্যালেঞ্জ</button>
+</div></section>
+<section id="numbers" class="card hidden"><h2>নম্বর চ্যালেঞ্জ</h2><p class="sub">একটি নম্বর বেছে নিয়ে কুইজ শুরু করো।</p><div id="numberGrid" class="grid"></div></section>
+<section id="quiz" class="card hidden"><div class="bar"><span id="roundLabel" class="pill">কুইজ</span><span class="pill">স্কোর: <b id="score">0</b></span></div><div id="question" class="question">শুরু করতে বোতাম চাপো।</div><div id="answers" class="answers"></div><p id="gameStatus" class="status" aria-live="polite"></p><div style="text-align:center"><button id="startBtn" onclick="startQuiz()">কুইজ শুরু</button><button id="nextBtn" class="hidden" onclick="nextQuestion()">পরের প্রশ্ন</button></div></section>
+<section class="card"><h2>🏆 তোমার সেরা স্কোর</h2><p id="bestScore" class="status">সেরা স্কোর: 0</p><p class="small">প্রতিটি সঠিক উত্তরে ১০ পয়েন্ট। ৭০% বা তার বেশি পেলে এই রাউন্ডে জিতবে!</p></section>
+</main><footer class="small" style="text-align:center;padding:10px">EAVO • শিক্ষামূলক ডেমো • অফলাইনে ব্রাউজারে চলে</footer></div>
+<script>
+const $=id=>document.getElementById(id);
+let player='',score=0,round=0,current=null,answered=false,activeCategory='general';
+const categoryNames={general:'সাধারণ জ্ঞান',gaming:'গেমিং কুইজ',technology:'অ্যাপ ও প্রযুক্তি',science:'বিজ্ঞান কুইজ',math:'গণিত কুইজ'};
+const categories={
+general:[
+{q:'বাংলাদেশের রাজধানী কোনটি?',a:['ঢাকা','চট্টগ্রাম','খুলনা','রাজশাহী'],c:0},
+{q:'বাংলাদেশের জাতীয় ফুল কোনটি?',a:['গোলাপ','শাপলা','জুঁই','সূর্যমুখী'],c:1},
+{q:'এক সপ্তাহে কয় দিন?',a:['৫','৬','৭','৮'],c:2},
+{q:'বাংলাদেশের জাতীয় ফল কোনটি?',a:['আম','কাঁঠাল','লিচু','কলা'],c:1}],
+gaming:[
+{q:'ভিডিও গেম খেলতে কোনটি বেশি ব্যবহৃত হয়?',a:['কন্ট্রোলার','স্টেথোস্কোপ','কম্পাস','থার্মোমিটার'],c:0},
+{q:'গেমে “লেভেল” বলতে সাধারণত কী বোঝায়?',a:['খেলার ধাপ','ফোনের রং','ব্যাটারির ধরন','ইন্টারনেটের দাম'],c:0},
+{q:'অনলাইন গেমে নিরাপদ থাকার ভালো উপায় কোনটি?',a:['পাসওয়ার্ড গোপন রাখা','সবাইকে PIN বলা','অচেনা লিংক খোলা','ব্যক্তিগত তথ্য প্রকাশ'],c:0},
+{q:'Minecraft-এ সাধারণত কী তৈরি করা যায়?',a:['বাড়ি ও কাঠামো','বাস্তব গাড়ি চালানো','ফোন চার্জ','ইমেইল পাঠানো'],c:0}],
+technology:[
+{q:'কম্পিউটারের “মস্তিষ্ক” বলা হয় কোনটিকে?',a:['মাউস','CPU','কীবোর্ড','মনিটর'],c:1},
+{q:'অ্যাকাউন্ট সুরক্ষিত রাখতে কী করা ভালো?',a:['শক্তিশালী পাসওয়ার্ড','পাসওয়ার্ড শেয়ার','একই PIN সবাইকে বলা','অচেনা ফাইল খোলা'],c:0},
+{q:'অ্যাপ আপডেট করলে কী হতে পারে?',a:['কিছু ত্রুটি ঠিক হতে পারে','স্ক্রিন অদৃশ্য হয়','ফোন সবসময় নষ্ট হয়','ইন্টারনেট চিরতরে বন্ধ'],c:0},
+{q:'ওয়েবসাইট দেখার জন্য কোনটি ব্যবহার করা হয়?',a:['ব্রাউজার','ক্যালকুলেটর','টর্চ','ক্যামেরা'],c:0}],
+science:[
+{q:'পানির রাসায়নিক সংকেত কী?',a:['CO₂','O₂','H₂O','NaCl'],c:2},
+{q:'সূর্য কোন দিক থেকে ওঠে?',a:['পশ্চিম','পূর্ব','উত্তর','দক্ষিণ'],c:1},
+{q:'পৃথিবী কোন নক্ষত্রকে প্রদক্ষিণ করে?',a:['চাঁদ','সূর্য','মঙ্গল','শুক্র'],c:1},
+{q:'মানুষ শ্বাস নেওয়ার সময় কোন গ্যাস ব্যবহার করে?',a:['অক্সিজেন','হিলিয়াম','নিয়ন','হাইড্রোজেন'],c:0}],
+math:[
+{q:'৫ + ৭ = কত?',a:['১০','১১','১২','১৩'],c:2},
+{q:'৯ × ৩ = কত?',a:['১৮','২১','২৭','৩০'],c:2},
+{q:'১২ ÷ ২ = কত?',a:['৪','৫','৬','৭'],c:2},
+{q:'১৫ − ৮ = কত?',a:['৫','৬','৭','৮'],c:2}]
+};
+function login(){let n=$('playerName').value.trim(),p=$('pin').value.trim();if(!n){$('loginMsg').textContent='আগে তোমার নাম লেখো।';return}if(!/^\d{4,6}$/.test(p)){$('loginMsg').textContent='৪–৬ সংখ্যার ডেমো PIN লেখো।';return}player=n;$('login').classList.add('hidden');$('app').classList.remove('hidden');$('welcome').textContent='স্বাগতম, '+player+'!';makeNumbers();updateBest();window.scrollTo(0,0)}
+function logout(){player='';$('app').classList.add('hidden');$('login').classList.remove('hidden');$('pin').value='';$('loginMsg').textContent=''}
+function hidePanels(){$('numbers').classList.add('hidden');$('quiz').classList.add('hidden')}
+function selectCategory(cat){activeCategory=cat;hidePanels();$('quiz').classList.remove('hidden');$('roundLabel').textContent=categoryNames[cat];$('question').textContent='এই বিভাগের কুইজ শুরু করতে চাপো।';$('answers').innerHTML='';$('gameStatus').textContent='';$('startBtn').classList.remove('hidden');$('startBtn').textContent='কুইজ শুরু';$('nextBtn').classList.add('hidden');window.scrollTo({top:$('quiz').offsetTop,behavior:'smooth'})}
+function showNumbers(){hidePanels();$('numbers').classList.remove('hidden');window.scrollTo({top:$('numbers').offsetTop,behavior:'smooth'})}
+function makeNumbers(){let g=$('numberGrid');g.innerHTML='';for(let i=1;i<=10;i++){let b=document.createElement('button');b.className='number';b.textContent=i;b.onclick=()=>{activeCategory=['general','gaming','technology','science','math'][(i-1)%5];selectCategory(activeCategory);$('gameStatus').textContent='নম্বর '+i+' বেছে নিয়েছ!';startQuiz()};g.appendChild(b)}}
+function startQuiz(){score=0;round=0;$('score').textContent='0';$('startBtn').classList.add('hidden');$('nextBtn').classList.add('hidden');nextQuestion()}
+function nextQuestion(){let qs=categories[activeCategory];if(round>=qs.length){$('question').textContent='কুইজ শেষ!';$('answers').innerHTML='';$('gameStatus').textContent='তোমার স্কোর: '+score+' / '+qs.length*10+'। '+(score>=Math.ceil(qs.length*.7)*10?'দারুণ! তুমি জিতেছ!':'আবার চেষ্টা করো—তুমি আরও ভালো করতে পারবে!');$('startBtn').classList.remove('hidden');$('startBtn').textContent='আবার খেলো';$('nextBtn').classList.add('hidden');saveBest();return}current=qs[Math.floor(Math.random()*qs.length)];round++;answered=false;$('roundLabel').textContent=categoryNames[activeCategory]+' • '+round+'/'+qs.length;$('question').textContent=current.q;$('answers').innerHTML='';$('gameStatus').textContent='একটি উত্তর বেছে নাও।';$('nextBtn').classList.add('hidden');current.a.forEach((ans,i)=>{let b=document.createElement('button');b.textContent=ans;b.onclick=()=>chooseAnswer(i,b);$('answers').appendChild(b)})}
+function chooseAnswer(i,button){if(answered)return;answered=true;[...$('answers').children].forEach((b,j)=>{b.disabled=true;if(j===current.c)b.classList.add('correct')});if(i===current.c){score+=10;$('score').textContent=score;$('gameStatus').textContent='সঠিক উত্তর! +১০ পয়েন্ট 🎉'}else{button.classList.add('wrong');$('gameStatus').textContent='এবার ভুল হয়েছে। সবুজ উত্তরটি সঠিক।'}$('nextBtn').classList.remove('hidden')}
+function saveBest(){try{let k='eavo_best_'+player,best=Number(localStorage.getItem(k)||0);if(score>best)localStorage.setItem(k,score);updateBest()}catch(e){$('bestScore').textContent='এই ব্রাউজারে স্কোর সংরক্ষণ করা যায়নি।'}}
+function updateBest(){try{$('bestScore').textContent='সেরা স্কোর: '+Number(localStorage.getItem('eavo_best_'+player)||0)}catch(e){}}
+</script></body></html>
